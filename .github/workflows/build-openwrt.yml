@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
+    - name: Checkout config
       uses: actions/checkout@v4
 
     - name: Install dependencies
@@ -16,22 +16,26 @@ jobs:
         sudo apt update
         sudo apt install -y build-essential clang flex bison g++ gawk gcc-multilib g++-multilib gettext git libncurses5-dev libssl-dev python3-setuptools rsync unzip zlib1g-dev file wget
 
-    - name: Fix permissions
-      run: chmod -R +x .
+    - name: Clone OpenWrt source
+      run: |
+        # 拉取 kkstone 针对 RAX3000Q 的 ImmortalWrt 21.02 源码
+        git clone https://github.com/kkstone/immortalwrt-ipq50xx.git -b openwrt-21.02 openwrt
 
     - name: Add OpenClash feed
+      working-directory: ./openwrt
       run: |
         echo 'src-git openclash https://github.com/vernesong/OpenClash.git;master' >> feeds.conf.default
 
     - name: Update and install feeds
+      working-directory: ./openwrt
       run: |
         ./scripts/feeds update -a
         ./scripts/feeds install -a
 
     - name: Generate config
+      working-directory: ./openwrt
       run: |
         rm -f .config
-        # 基础设备配置（kkstone的模板一般会自带默认，这里做强制指定）
         echo "CONFIG_TARGET_qualcommax=y" >> .config
         echo "CONFIG_TARGET_qualcommax_ipq50xx=y" >> .config
         echo "CONFIG_TARGET_qualcommax_ipq50xx_DEVICE_cmcc_rax3000q=y" >> .config
@@ -46,10 +50,10 @@ jobs:
         echo "CONFIG_PACKAGE_dnsmasq-full=y" >> .config
         echo "CONFIG_PACKAGE_ip-full=y" >> .config
         
-        # 生成最终配置
         make defconfig
 
     - name: Build firmware
+      working-directory: ./openwrt
       run: |
         make -j4 || make -j1 V=s
 
@@ -57,4 +61,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: openwrt-rax3000q-openclash
-        path: bin/targets/
+        path: openwrt/bin/targets/
