@@ -31,11 +31,24 @@ jobs:
         ./scripts/feeds update -a
         ./scripts/feeds install -a
 
+    # 【关键新增步骤：在编译前把内核塞进固件】
+    - name: Download Mihomo Core
+      working-directory: ./openwrt
+      run: |
+        mkdir -p files/etc/openclash/core
+        # 下载适合 RAX3000Q (ARMv7) 的 mihomo 内核
+        wget -q https://github.com/MetaCubeX/mihomo/releases/download/v1.19.33/mihomo-linux-armv7-v1.19.33.gz -O mihomo.gz
+        gzip -d mihomo.gz
+        mv mihomo files/etc/openclash/core/clash_meta
+        # 复制一份作为 TUN 模式内核
+        cp files/etc/openclash/core/clash_meta files/etc/openclash/core/clash_tun
+        chmod +x files/etc/openclash/core/clash_meta
+        chmod +x files/etc/openclash/core/clash_tun
+
     - name: Generate config
       working-directory: ./openwrt
       run: |
         rm -f .config
-        # 【关键修正】RAX3000Q 的正确代号是 ipq50xx/arm，不是 qualcommax！
         echo "CONFIG_TARGET_ipq50xx=y" >> .config
         echo "CONFIG_TARGET_ipq50xx_arm=y" >> .config
         echo "CONFIG_TARGET_ipq50xx_arm_DEVICE_cmcc_rax3000q=y" >> .config
