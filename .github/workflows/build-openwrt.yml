@@ -18,7 +18,6 @@ jobs:
 
     - name: Clone OpenWrt source
       run: |
-        # 拉取 kkstone 针对 RAX3000Q 的 ImmortalWrt 21.02 源码
         git clone https://github.com/kkstone/immortalwrt-ipq50xx.git -b openwrt-21.02 openwrt
 
     - name: Add OpenClash feed
@@ -36,9 +35,10 @@ jobs:
       working-directory: ./openwrt
       run: |
         rm -f .config
-        echo "CONFIG_TARGET_qualcommax=y" >> .config
-        echo "CONFIG_TARGET_qualcommax_ipq50xx=y" >> .config
-        echo "CONFIG_TARGET_qualcommax_ipq50xx_DEVICE_cmcc_rax3000q=y" >> .config
+        # 【关键修正】RAX3000Q 的正确代号是 ipq50xx/arm，不是 qualcommax！
+        echo "CONFIG_TARGET_ipq50xx=y" >> .config
+        echo "CONFIG_TARGET_ipq50xx_arm=y" >> .config
+        echo "CONFIG_TARGET_ipq50xx_arm_DEVICE_cmcc_rax3000q=y" >> .config
         
         # 开启 OpenClash 及其必须的依赖
         echo "CONFIG_PACKAGE_luci-app-openclash=y" >> .config
@@ -60,5 +60,5 @@ jobs:
     - name: Upload firmware
       uses: actions/upload-artifact@v4
       with:
-        name: openwrt-rax3000q-openclash
+        name: openwrt-rax3000q-openclash-arm
         path: openwrt/bin/targets/
