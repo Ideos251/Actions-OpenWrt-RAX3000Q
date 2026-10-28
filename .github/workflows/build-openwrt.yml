@@ -18,6 +18,7 @@ jobs:
 
     - name: Clone OpenWrt source
       run: |
+        # 拉取 kkstone 针对 RAX3000Q 的 ImmortalWrt 21.02 源码
         git clone https://github.com/kkstone/immortalwrt-ipq50xx.git -b openwrt-21.02 openwrt
 
     - name: Add OpenClash feed
@@ -31,7 +32,6 @@ jobs:
         ./scripts/feeds update -a
         ./scripts/feeds install -a
 
-    # 【关键新增步骤：在编译前把内核塞进固件】
     - name: Download Mihomo Core
       working-directory: ./openwrt
       run: |
@@ -49,6 +49,7 @@ jobs:
       working-directory: ./openwrt
       run: |
         rm -f .config
+        # RAX3000Q 的正确代号
         echo "CONFIG_TARGET_ipq50xx=y" >> .config
         echo "CONFIG_TARGET_ipq50xx_arm=y" >> .config
         echo "CONFIG_TARGET_ipq50xx_arm_DEVICE_cmcc_rax3000q=y" >> .config
@@ -63,7 +64,16 @@ jobs:
         echo "CONFIG_PACKAGE_dnsmasq-full=y" >> .config
         echo "CONFIG_PACKAGE_ip-full=y" >> .config
         
+        # 解决编译缺包问题（跳过不必要的检测工具）
+        echo "# CONFIG_PACKAGE_coccinelle is not set" >> .config
+        
         make defconfig
+
+    # 【关键修复步骤】先单线程下载所有源码包，防止编译时网络超时
+    - name: Download package source
+      working-directory: ./openwrt
+      run: |
+        make -j1 download
 
     - name: Build firmware
       working-directory: ./openwrt
